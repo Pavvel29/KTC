@@ -252,7 +252,8 @@ document.querySelector(".button-div").addEventListener("click", function () {
   document.querySelector(".avto-corection").classList.toggle("none");
   document.querySelector(".corection").classList.toggle("none");
   document.querySelector(".conteiner").classList.toggle("none");
-  document.getElementById('map').style.pointerEvents = 'auto';
+  const mapVisible = !document.getElementById('map').classList.contains('none');
+  document.getElementById('map').style.pointerEvents = mapVisible ? 'auto' : 'none';
 });
 
 document.querySelector(".open-menu").addEventListener("click", function () {
