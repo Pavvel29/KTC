@@ -319,8 +319,9 @@
             let alpha = event.alpha;
             const adjustedAngle =
               beta >= -90 && beta <= 90 ? Math.abs(beta) : 0;
+            let adjustedAzimuth = (360 - alpha) % 360;
             document.getElementById("angle").value = adjustedAngle.toFixed(1);
-            document.getElementById("azimuth").value = alpha.toFixed(1);
+            document.getElementById("azimuth").value = adjustedAzimuth.toFixed(1);
           };
         }
       });
