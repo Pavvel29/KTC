@@ -314,15 +314,14 @@
 
       window.addEventListener("deviceorientation", function (event) {
         if (autofillEnabled) {
-          const beta = event.beta; // Кут нахилу до вертикалі
-          const alpha = event.alpha; // Азимут
-          // Приведення кута нахилу до діапазону від -90 до 90 градусів
-          const adjustedAngle = beta >= -90 && beta <= 90 ? Math.abs(beta) : 0;
-          // Корекція азимуту до діапазону від 0 до 360 градусів
-          
-          // Відображення значень кута нахилу та азимуту
-          document.getElementById("angle").value = adjustedAngle.toFixed(1);
-          document.getElementById("azimuth").value = alpha.toFixed(1);
+          window.ondeviceorientationabsolute = function (event) {
+            let beta = event.beta;
+            let alpha = event.alpha;
+            const adjustedAngle =
+              beta >= -90 && beta <= 90 ? Math.abs(beta) : 0;
+            document.getElementById("angle").value = adjustedAngle.toFixed(1);
+            document.getElementById("azimuth").value = alpha.toFixed(1);
+          };
         }
       });
 
