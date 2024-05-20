@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Калькулятор траєкторії снаряду</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #222;
+        color: #ddd;
+      }
+      h2 {
+        margin-bottom: 20px;
+        color: #fff;
+        text-align: center;
+      }
+      form {
+        max-width: 400px;
+        margin: 0 auto;
+        background-color: #333;
+        padding: 20px;
+        border-radius: 8px;
+      }
+      label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+      input[type="number"],
+      input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #777;
+        border-radius: 4px;
+        box-sizing: border-box;
+        background-color: #444;
+        color: #ddd;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-bottom: 10px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #result {
+        margin-top: 20px;
+        background-color: #333;
+        padding: 20px;
+        border-radius: 8px;
+      }
+      #result p {
+        color: #ddd;
+      }
+      #map {
+        height: 400px;
+        margin-top: 20px;
+        border-radius: 8px;
+      }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+  </head>
+  <body>
+    <h2>Корректировка Траєкторії Снаряду</h2>
+    <form id="inputForm">
+      <label for="mass">Маса снаряду (кг):</label>
+      <input type="number" id="mass" required step="any" value="5"/><br />
+
+      <label for="initialVelocity">Початкова швидкість (м/с):</label>
+      <input type="number" id="initialVelocity" required value="100"/><br />
+
+      <label for="dragCoefficient">Коефіцієнт опору повітря:</label>
+      <input type="number" id="dragCoefficient" required step="0.01" value="0.47"/><br />
+
+      <label for="angle">Кут нахилу ствола (градуси):</label>
+      <input type="number" id="angle" required step="0.1"/><br />
+
+      <label for="azimuth">Азимут (градуси):</label>
+      <input
+        type="number"
+        id="azimuth"
+        required
+        min="0"
+        max="360"
+        step="0.1"
+      /><br />
+
+      <label for="latitudeDegrees">Широта (градуси, хвилини, секунди):</label>
+      <input
+        type="number"
+        id="latitudeDegrees"
+        placeholder="Градуси"
+        required
+      />
+      <input
+        type="number"
+        id="latitudeMinutes"
+        placeholder="Хвилини"
+        required
+      />
+      <input
+        type="number"
+        id="latitudeSeconds"
+        placeholder="Секунди"
+        required
+      />
+      <select id="latitudeDirection" required>
+        <option value="N">N</option>
+        <option value="S">S</option></select
+      ><br />
+
+      <label for="longitudeDegrees">Довгота (градуси, хвилини, секунди):</label>
+      <input
+        type="number"
+        id="longitudeDegrees"
+        placeholder="Градуси"
+        required
+      />
+      <input
+        type="number"
+        id="longitudeMinutes"
+        placeholder="Хвилини"
+        required
+      />
+      <input
+        type="number"
+        id="longitudeSeconds"
+        placeholder="Секунди"
+        required
+      />
+      <select id="longitudeDirection" required>
+        <option value="E">E</option>
+        <option value="W">W</option></select
+      ><br />
+
+      <label for="initialZ">Початкова координата Z (м):</label>
+      <input type="number" id="initialZ" required value="0"/><br />
+
+      <label for="gravity">Гравітаційне прискорення (м/с²):</label>
+      <input type="number" id="gravity" value="9.81" step="0.01" required /><br />
+
+      <label for="airDensity">Щільність повітря (кг/м³):</label>
+      <input type="number" id="airDensity" value="1.225" step="0.001" required /><br />
+
+      <label for="projectileArea">Площа поперечного перерізу снаряду (м²):</label>
+      <input type="number" id="projectileArea" value="0.05" step="0.01" required /><br />
+
+      <button type="submit">Розрахувати траєкторію</button>
+      <button type="button" id="autofillButton">Автозаповнення</button>
+    </form>
+
+    <script>
+      document
+        .getElementById("inputForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent form submission
+
+          // Отримання значень параметрів
+          let mass = parseFloat(document.getElementById("mass").value);
+          let initialVelocity = parseFloat(
+            document.getElementById("initialVelocity").value
+          );
+          let dragCoefficient = parseFloat(
+            document.getElementById("dragCoefficient").value
+          );
+          let angle = parseFloat(document.getElementById("angle").value);
+          let azimuth = parseFloat(document.getElementById("azimuth").value);
+          let initialZ = parseFloat(document.getElementById("initialZ").value);
+          let gravity = parseFloat(document.getElementById("gravity").value);
+          let airDensity = parseFloat(document.getElementById("airDensity").value);
+          let projectileArea = parseFloat(document.getElementById("projectileArea").value);
+
+          // Отримання координат і конвертація в десятковий формат
+          let latitude = convertToDecimal(
+            parseFloat(document.getElementById("latitudeDegrees").value),
+            parseFloat(document.getElementById("latitudeMinutes").value),
+            parseFloat(document.getElementById("latitudeSeconds").value),
+            document.getElementById("latitudeDirection").value
+          );
+          let longitude = convertToDecimal(
+            parseFloat(document.getElementById("longitudeDegrees").value),
+            parseFloat(document.getElementById("longitudeMinutes").value),
+            parseFloat(document.getElementById("longitudeSeconds").value),
+            document.getElementById("longitudeDirection").value
+          );
+
+          // Виклик функції для розрахунку траєкторії
+          calculateTrajectory(
+            mass,
+            initialVelocity,
+            dragCoefficient,
+            angle,
+            azimuth,
+            initialZ,
+            latitude,
+            longitude,
+            gravity,
+            airDensity,
+            projectileArea
+          );
+        });
+
+      function success(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        const latDegrees = Math.floor(Math.abs(lat));
+        const latMinutes = Math.floor((Math.abs(lat) - latDegrees) * 60);
+        const latSeconds = Math.round(((Math.abs(lat) - latDegrees) * 60 - latMinutes) * 60);
+        const latDirection = lat >= 0 ? "N" : "S";
+
+        const lonDegrees = Math.floor(Math.abs(lon));
+        const lonMinutes = Math.floor((Math.abs(lon) - lonDegrees) * 60);
+        const lonSeconds = Math.round(((Math.abs(lon) - lonDegrees) * 60 - lonMinutes) * 60);
+        const lonDirection = lon >= 0 ? "E" : "W";
+
+        document.getElementById("latitudeDegrees").value = latDegrees;
+        document.getElementById("latitudeMinutes").value = latMinutes;
+        document.getElementById("latitudeSeconds").value = latSeconds;
+        document.getElementById("latitudeDirection").value = latDirection;
+
+        document.getElementById("longitudeDegrees").value = lonDegrees;
+        document.getElementById("longitudeMinutes").value = lonMinutes;
+        document.getElementById("longitudeSeconds").value = lonSeconds;
+        document.getElementById("longitudeDirection").value = lonDirection;
+      }
+
+      function error() {
+        alert("Неможливо отримати ваше місцезнаходження.");
+      }
+
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0,
+      };
+
+      document
+        .getElementById("autofillButton")
+        .addEventListener("click", function () {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(success, error, options);
+          } else {
+            alert("Ваш браузер не підтримує геолокацію.");
+          }
+        });
+
+      window.addEventListener("deviceorientation", function (event) {
+        const alpha = event.alpha; // Азимут
+        const beta = event.beta; // Кут нахилу до вертикалі
+
+        const adjustedAzimuth = alpha ? alpha : 0; // Якщо значення alpha немає, використовувати 0
+        const adjustedAngle = beta ? 90 - beta : 0; // Переведення кута в систему координат від горизонталі
+
+        document.getElementById("angle").value = adjustedAngle.toFixed(1);
+        document.getElementById("azimuth").value = adjustedAzimuth.toFixed(1);
+      });
+
+      function convertToDecimal(degrees, minutes, seconds, direction) {
+        let decimal = degrees + minutes / 60 + seconds / 3600;
+        if (direction === "S" || direction === "W") {
+          decimal = -decimal;
+        }
+        return decimal;
+      }
+
+      function calculateTrajectory(
+        mass,
+        initialVelocity,
+        dragCoefficient,
+        angle,
+        azimuth,
+        initialZ,
+        latitude,
+        longitude,
+        gravity,
+        airDensity,
+        projectileArea
+      ) {
+        // Переведення кутів з градусів в радіани
+        const angleRadians = angle * (Math.PI / 180);
+        const azimuthRadians = azimuth * (Math.PI / 180);
+
+        // Горизонтальна та вертикальна складові початкової швидкості (м/с)
+        let vX = initialVelocity * Math.cos(angleRadians);
+        let vY = initialVelocity * Math.sin(angleRadians);
+
+        // Ініціалізація положення
+        let x = 0;
+        let y = initialZ;
+        let t = 0;
+        const deltaT = 0.01; // Крок часу для інтеграції
+
+        while (y > 0) {
+          t += deltaT;
+
+          // Визначення сили опору повітря
+          const speed = Math.sqrt(vX * vX + vY * vY);
+          const dragForce =
+            0.5 * airDensity * speed * speed * dragCoefficient * projectileArea;
+
+          // Розрахунок прискорень
+          const aX = (-dragForce * (vX / speed)) / mass;
+          const aY = -gravity - (dragForce * (vY / speed)) / mass;
+
+          // Оновлення швидкості
+          vX += aX * deltaT;
+          vY += aY * deltaT;
+
+          // Оновлення положення
+          x += vX * deltaT;
+          y += vY * deltaT;
+        }
+
+        // Розрахунок зміщення по азимуту
+        const shiftX = x * Math.cos((90 - azimuth) * (Math.PI / 180));
+        const shiftY = x * Math.sin((90 - azimuth) * (Math.PI / 180));
+
+        // Координати приземлення
+        const landingLatitude = latitude + shiftY / 111000; // Переводимо горизонтальне зміщення з метрів у градуси (приблизно)
+        const landingLongitude =
+          longitude + shiftX / (111000 * Math.cos(latitude * (Math.PI / 180))); // Переводимо горизонтальне зміщення з метрів у градуси (приблизно)
+
+        // Виведення результатів
+        console.log("Час польоту:", t.toFixed(2), "с");
+        console.log("Горизонтальна відстань:", x.toFixed(2), "м");
+        console.log("Азимут:", azimuth.toFixed(2), "градуси");
+        console.log(
+          "Координати приземлення (широта, довгота):",
+          landingLatitude.toFixed(6),
+          landingLongitude.toFixed(6)
+        );
+        document.getElementById("result").innerHTML = `
+          <p>Час польоту: ${t.toFixed(2)} с</p>
+          <p>Горизонтальна відстань: ${x.toFixed(2)} м</p>
+          <p>Азимут: ${azimuth.toFixed(2)} градуси</p>
+          <p>Координати приземлення (широта, довгота): ${landingLatitude.toFixed(
+            6
+          )}, ${landingLongitude.toFixed(6)}</p>
+        `;
+
+        // Відображення карти з геолокаційними точками
+        displayMap(latitude, longitude, landingLatitude, landingLongitude);
+      }
+
+      function displayMap(startLat, startLng, endLat, endLng) {
+        const map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 8,
+          center: { lat: startLat, lng: startLng },
+        });
+
+        const startMarker = new google.maps.Marker({
+          position: { lat: startLat, lng: startLng },
+          map: map,
+          title: "Точка відльоту",
+        });
+
+        const endMarker = new google.maps.Marker({
+          position: { lat: endLat, lng: endLng },
+          map: map,
+          title: "Точка прильоту",
+        });
+
+        const flightPath = new google.maps.Polyline({
+          path: [
+            { lat: startLat, lng: startLng },
+            { lat: endLat, lng: endLng },
+          ],
+          geodesic: true,
+          strokeColor: "#FF0000",
+          strokeOpacity: 1.0,
+          strokeWeight: 2,
+        });
+
+        flightPath.setMap(map);
+      }
+    </script>
+    <div id="result"></div>
+    <div id="map"></div>
+  </body>
+</html>
