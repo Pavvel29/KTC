@@ -252,6 +252,7 @@ document.querySelector(".button-div").addEventListener("click", function () {
   document.querySelector(".avto-corection").classList.toggle("none");
   document.querySelector(".corection").classList.toggle("none");
   document.querySelector(".conteiner").classList.toggle("none");
+  document.getElementById('map').style.pointerEvents = 'auto';
 });
 
 document.querySelector(".open-menu").addEventListener("click", function () {
@@ -259,6 +260,7 @@ document.querySelector(".open-menu").addEventListener("click", function () {
   document.querySelector(".avto-corection").classList.toggle("none");
   document.querySelector(".corection").classList.toggle("none");
   document.querySelector(".conteiner").classList.toggle("none");
+  document.getElementById('map').style.pointerEvents = 'none';
 });
 let trigger = false;
 let intervalId; // оголошуємо змінну для зберігання ID інтервалу
