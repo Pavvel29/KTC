@@ -1,20 +1,15 @@
 let autofillEnabled = false;
-let trigger = false;
-let intervalId; // оголошуємо змінну для зберігання ID інтервалу
-
 document.getElementById("toggleOrientation").addEventListener("click", function () {
   autofillEnabled = !autofillEnabled;
-  this.textContent = autofillEnabled
-    ? "Вимкнути автооновлення кута"
-    : "Увімкнути автооновлення кута";
+  this.textContent = autofillEnabled ? "Вимкнути автооновлення кута" : "Увімкнути автооновлення кута";
 });
 
 document.getElementById("inputForm").addEventListener("submit", function (event) {
   event.preventDefault(); // Prevent form submission
-  submitForm();
+  handleFormSubmission();
 });
 
-function submitForm() {
+function handleFormSubmission() {
   // Отримання значень параметрів
   let mass = parseFloat(document.getElementById("mass").value);
   let initialVelocity = parseFloat(document.getElementById("initialVelocity").value);
@@ -101,16 +96,12 @@ document.getElementById("autofillButton").addEventListener("click", function () 
 
 window.addEventListener("deviceorientation", function (event) {
   if (autofillEnabled) {
-    window.ondeviceorientationabsolute = function (event) {
-      if (autofillEnabled) {
-        let beta = event.beta;
-        let alpha = event.alpha;
-        const adjustedAngle = beta >= -90 && beta <= 90 ? Math.abs(beta) : 0;
-        let adjustedAzimuth = (360 - alpha) % 360;
-        document.getElementById("angle").value = adjustedAngle.toFixed(1);
-        document.getElementById("azimuth").value = adjustedAzimuth.toFixed(1);
-      }
-    };
+    let beta = event.beta;
+    let alpha = event.alpha;
+    const adjustedAngle = beta >= -90 && beta <= 90 ? Math.abs(beta) : 0;
+    let adjustedAzimuth = (360 - alpha) % 360;
+    document.getElementById("angle").value = adjustedAngle.toFixed(1);
+    document.getElementById("azimuth").value = adjustedAzimuth.toFixed(1);
   }
 });
 
@@ -179,51 +170,52 @@ function calculateTrajectory(
 
   // Виведення результатів
   document.getElementById("result").innerHTML = `
-              <p>Час польоту: ${t.toFixed(2)} с</p>
-              <p>Горизонтальна відстань: ${x.toFixed(2)} м</p>
-              <p>Азимут: ${azimuth.toFixed(2)} градуси</p>
-              <p>Координати приземлення (широта, довгота): ${landingLatitude.toFixed(6)}, ${landingLongitude.toFixed(6)}</p>
-            `;
-
-  // Оновлення значень форми
-  updateFormValues(mass, initialVelocity, dragCoefficient, angle, azimuth, initialZ, latitude, longitude, gravity, airDensity, projectileArea);
+    <p>Час польоту: ${t.toFixed(2)} с</p>
+    <p>Горизонтальна відстань: ${x.toFixed(2)} м</p>
+    <p>Азимут: ${azimuth.toFixed(2)} градуси</p>
+    <p>Координати приземлення (широта, довгота): ${landingLatitude.toFixed(6)}, ${landingLongitude.toFixed(6)}</p>
+  `;
 
   // Відображення карти з геолокаційними точками
   displayMap(latitude, longitude, landingLatitude, landingLongitude);
 }
 
-function updateFormValues(mass, initialVelocity, dragCoefficient, angle, azimuth, initialZ, latitude, longitude, gravity, airDensity, projectileArea) {
-  document.getElementById("mass").value = mass;
-  document.getElementById("initialVelocity").value = initialVelocity;
-  document.getElementById("dragCoefficient").value = dragCoefficient;
-  document.getElementById("angle").value = angle;
-  document.getElementById("azimuth").value = azimuth;
-  document.getElementById("initialZ").value = initialZ;
-  document.getElementById("gravity").value = gravity;
-  document.getElementById("airDensity").value = airDensity;
-  document.getElementById("projectileArea").value = projectileArea;
+let map; // Глобальна змінна для зберігання посилання на карту
 
-  const latComponents = convertToDMS(latitude);
-  const lonComponents = convertToDMS(longitude);
+function displayMap(startLat, startLng, endLat, endLng) {
+  if (!map) {
+    map = L.map("map").setView([startLat, startLng], 8);
 
-  document.getElementById("latitudeDegrees").value = latComponents.degrees;
-  document.getElementById("latitudeMinutes").value = latComponents.minutes;
-  document.getElementById("latitudeSeconds").value = latComponents.seconds;
-  document.getElementById("latitudeDirection").value = latComponents.direction;
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+  } else {
+    map.setView([startLat, startLng], 8);
+    map.eachLayer(function (layer) {
+      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+        map.removeLayer(layer);
+      }
+    });
+  }
 
-  document.getElementById("longitudeDegrees").value = lonComponents.degrees;
-  document.getElementById("longitudeMinutes").value = lonComponents.minutes;
-  document.getElementById("longitudeSeconds").value = lonComponents.seconds;
-  document.getElementById("longitudeDirection").value = lonComponents.direction;
-}
+  const startMarker = L.marker([startLat, startLng])
+    .addTo(map)
+    .bindPopup("Точка відльоту")
+    .openPopup();
 
-function convertToDMS(decimal) {
-  const degrees = Math.floor(Math.abs(decimal));
-  const minutes = Math.floor((Math.abs(decimal) - degrees) * 60);
-  const seconds = Math.round(((Math.abs(decimal) - degrees) * 60 - minutes) * 60);
-  const direction = decimal >= 0 ? (decimal === "latitude" ? "N" : "E") : (decimal === "latitude" ? "S" : "W");
+  const endMarker = L.marker([endLat,
+endLng])
+    .addTo(map)
+    .bindPopup("Точка прильоту")
+    .openPopup();
 
-  return { degrees, minutes, seconds, direction };
+  const latlngs = [
+    [startLat, startLng],
+    [endLat, endLng],
+  ];
+
+  const polyline = L.polyline(latlngs, { color: "red" }).addTo(map);
+  map.fitBounds(polyline.getBounds());
 }
 
 document.querySelector(".button-div").addEventListener("click", function () {
@@ -245,17 +237,22 @@ function toggleElements() {
   elements.forEach((el) => el.classList.toggle("none"));
 }
 
+let trigger = false;
+let intervalId; // оголошуємо змінну для зберігання ID інтервалу
+
 document.querySelector(".avto-corection").addEventListener("click", function () {
   if (trigger) {
     clearInterval(intervalId); // якщо trigger === true, зупиняємо інтервал
     trigger = false;
   } else {
-    intervalId = setInterval(submitForm, 500);
+    intervalId = setInterval(() => {
+      handleFormSubmission();
+    }, 500);
     trigger = true;
   }
 });
 
 document.querySelector(".corection").addEventListener("click", function (event) {
   event.preventDefault(); // Prevent form submission
-  submitForm();
+  handleFormSubmission();
 });
