@@ -1,55 +1,63 @@
 let autofillEnabled = false;
-document.getElementById("toggleOrientation").addEventListener("click", function () {
-  autofillEnabled = !autofillEnabled;
-  this.textContent = autofillEnabled ? "Вимкнути автооновлення кута" : "Увімкнути автооновлення кута";
-});
+document
+  .getElementById("toggleOrientation")
+  .addEventListener("click", function () {
+    autofillEnabled = !autofillEnabled;
+    this.textContent = autofillEnabled
+      ? "Вимкнути автооновлення кута"
+      : "Увімкнути автооновлення кута";
+  });
 
-document.getElementById("inputForm").addEventListener("submit", function (event) {
-  event.preventDefault(); // Prevent form submission
-  handleFormSubmission();
-});
+document
+  .getElementById("inputForm")
+  .addEventListener("submit", function (event) {
+    event.preventDefault(); // Prevent form submission
+    // Отримання значень параметрів
+    let mass = parseFloat(document.getElementById("mass").value);
+    let initialVelocity = parseFloat(
+      document.getElementById("initialVelocity").value
+    );
+    let dragCoefficient = parseFloat(
+      document.getElementById("dragCoefficient").value
+    );
+    let angle = parseFloat(document.getElementById("angle").value);
+    let azimuth = parseFloat(document.getElementById("azimuth").value);
+    let initialZ = parseFloat(document.getElementById("initialZ").value);
+    let gravity = parseFloat(document.getElementById("gravity").value);
+    let airDensity = parseFloat(document.getElementById("airDensity").value);
+    let projectileArea = parseFloat(
+      document.getElementById("projectileArea").value
+    );
 
-function handleFormSubmission() {
-  // Отримання значень параметрів
-  let mass = parseFloat(document.getElementById("mass").value);
-  let initialVelocity = parseFloat(document.getElementById("initialVelocity").value);
-  let dragCoefficient = parseFloat(document.getElementById("dragCoefficient").value);
-  let angle = parseFloat(document.getElementById("angle").value);
-  let azimuth = parseFloat(document.getElementById("azimuth").value);
-  let initialZ = parseFloat(document.getElementById("initialZ").value);
-  let gravity = parseFloat(document.getElementById("gravity").value);
-  let airDensity = parseFloat(document.getElementById("airDensity").value);
-  let projectileArea = parseFloat(document.getElementById("projectileArea").value);
+    // Отримання координат і конвертація в десятковий формат
+    let latitude = convertToDecimal(
+      parseFloat(document.getElementById("latitudeDegrees").value),
+      parseFloat(document.getElementById("latitudeMinutes").value),
+      parseFloat(document.getElementById("latitudeSeconds").value),
+      document.getElementById("latitudeDirection").value
+    );
+    let longitude = convertToDecimal(
+      parseFloat(document.getElementById("longitudeDegrees").value),
+      parseFloat(document.getElementById("longitudeMinutes").value),
+      parseFloat(document.getElementById("longitudeSeconds").value),
+      document.getElementById("longitudeDirection").value
+    );
 
-  // Отримання координат і конвертація в десятковий формат
-  let latitude = convertToDecimal(
-    parseFloat(document.getElementById("latitudeDegrees").value),
-    parseFloat(document.getElementById("latitudeMinutes").value),
-    parseFloat(document.getElementById("latitudeSeconds").value),
-    document.getElementById("latitudeDirection").value
-  );
-  let longitude = convertToDecimal(
-    parseFloat(document.getElementById("longitudeDegrees").value),
-    parseFloat(document.getElementById("longitudeMinutes").value),
-    parseFloat(document.getElementById("longitudeSeconds").value),
-    document.getElementById("longitudeDirection").value
-  );
-
-  // Виклик функції для розрахунку траєкторії
-  calculateTrajectory(
-    mass,
-    initialVelocity,
-    dragCoefficient,
-    angle,
-    azimuth,
-    initialZ,
-    latitude,
-    longitude,
-    gravity,
-    airDensity,
-    projectileArea
-  );
-}
+    // Виклик функції для розрахунку траєкторії
+    calculateTrajectory(
+      mass,
+      initialVelocity,
+      dragCoefficient,
+      angle,
+      azimuth,
+      initialZ,
+      latitude,
+      longitude,
+      gravity,
+      airDensity,
+      projectileArea
+    );
+  });
 
 function success(position) {
   const lat = position.coords.latitude;
@@ -57,12 +65,16 @@ function success(position) {
 
   const latDegrees = Math.floor(Math.abs(lat));
   const latMinutes = Math.floor((Math.abs(lat) - latDegrees) * 60);
-  const latSeconds = Math.round(((Math.abs(lat) - latDegrees) * 60 - latMinutes) * 60);
+  const latSeconds = Math.round(
+    ((Math.abs(lat) - latDegrees) * 60 - latMinutes) * 60
+  );
   const latDirection = lat >= 0 ? "N" : "S";
 
   const lonDegrees = Math.floor(Math.abs(lon));
   const lonMinutes = Math.floor((Math.abs(lon) - lonDegrees) * 60);
-  const lonSeconds = Math.round(((Math.abs(lon) - lonDegrees) * 60 - lonMinutes) * 60);
+  const lonSeconds = Math.round(
+    ((Math.abs(lon) - lonDegrees) * 60 - lonMinutes) * 60
+  );
   const lonDirection = lon >= 0 ? "E" : "W";
 
   document.getElementById("latitudeDegrees").value = latDegrees;
@@ -86,22 +98,28 @@ const options = {
   maximumAge: 0,
 };
 
-document.getElementById("autofillButton").addEventListener("click", function () {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(success, error, options);
-  } else {
-    alert("Ваш браузер не підтримує геолокацію.");
-  }
-});
+document
+  .getElementById("autofillButton")
+  .addEventListener("click", function () {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(success, error, options);
+    } else {
+      alert("Ваш браузер не підтримує геолокацію.");
+    }
+  });
 
 window.addEventListener("deviceorientation", function (event) {
   if (autofillEnabled) {
-    let beta = event.beta;
-    let alpha = event.alpha;
-    const adjustedAngle = beta >= -90 && beta <= 90 ? Math.abs(beta) : 0;
-    let adjustedAzimuth = (360 - alpha) % 360;
-    document.getElementById("angle").value = adjustedAngle.toFixed(1);
-    document.getElementById("azimuth").value = adjustedAzimuth.toFixed(1);
+    window.ondeviceorientationabsolute = function (event) {
+      if (autofillEnabled) {
+        let beta = event.beta;
+        let alpha = event.alpha;
+        const adjustedAngle = beta >= -90 && beta <= 90 ? Math.abs(beta) : 0;
+        let adjustedAzimuth = (360 - alpha) % 360;
+        document.getElementById("angle").value = adjustedAngle.toFixed(1);
+        document.getElementById("azimuth").value = adjustedAzimuth.toFixed(1);
+      }
+    };
   }
 });
 
@@ -145,7 +163,8 @@ function calculateTrajectory(
 
     // Визначення сили опору повітря
     const speed = Math.sqrt(vX * vX + vY * vY);
-    const dragForce = 0.5 * airDensity * speed * speed * dragCoefficient * projectileArea;
+    const dragForce =
+      0.5 * airDensity * speed * speed * dragCoefficient * projectileArea;
 
     // Розрахунок прискорень
     const aX = (-dragForce * (vX / speed)) / mass;
@@ -166,15 +185,26 @@ function calculateTrajectory(
 
   // Координати приземлення
   const landingLatitude = latitude + shiftY / 111000; // Переводимо горизонтальне зміщення з метрів у градуси (приблизно)
-  const landingLongitude = longitude + shiftX / (111000 * Math.cos(latitude * (Math.PI / 180))); // Переводимо горизонтальне зміщення з метрів у градуси (приблизно)
+  const landingLongitude =
+    longitude + shiftX / (111000 * Math.cos(latitude * (Math.PI / 180))); // Переводимо горизонтальне зміщення з метрів у градуси (приблизно)
 
   // Виведення результатів
+  // console.log("Час польоту:", t.toFixed(2), "с");
+  // console.log("Горизонтальна відстань:", x.toFixed(2), "м");
+  // console.log("Азимут:", azimuth.toFixed(2), "градуси");
+  // console.log(
+  //   "Координати приземлення (широта, довгота):",
+  //   landingLatitude.toFixed(6),
+  //   landingLongitude.toFixed(6)
+  // );
   document.getElementById("result").innerHTML = `
-    <p>Час польоту: ${t.toFixed(2)} с</p>
-    <p>Горизонтальна відстань: ${x.toFixed(2)} м</p>
-    <p>Азимут: ${azimuth.toFixed(2)} градуси</p>
-    <p>Координати приземлення (широта, довгота): ${landingLatitude.toFixed(6)}, ${landingLongitude.toFixed(6)}</p>
-  `;
+              <p>Час польоту: ${t.toFixed(2)} с</p>
+              <p>Горизонтальна відстань: ${x.toFixed(2)} м</p>
+              <p>Азимут: ${azimuth.toFixed(2)} градуси</p>
+              <p>Координати приземлення (широта, довгота): ${landingLatitude.toFixed(
+                6
+              )}, ${landingLongitude.toFixed(6)}</p>
+            `;
 
   // Відображення карти з геолокаційними точками
   displayMap(latitude, longitude, landingLatitude, landingLongitude);
@@ -187,7 +217,8 @@ function displayMap(startLat, startLng, endLat, endLng) {
     map = L.map("map").setView([startLat, startLng], 8);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
   } else {
     map.setView([startLat, startLng], 8);
@@ -203,8 +234,7 @@ function displayMap(startLat, startLng, endLat, endLng) {
     .bindPopup("Точка відльоту")
     .openPopup();
 
-  const endMarker = L.marker([endLat,
-endLng])
+  const endMarker = L.marker([endLat, endLng])
     .addTo(map)
     .bindPopup("Точка прильоту")
     .openPopup();
@@ -240,19 +270,112 @@ function toggleElements() {
 let trigger = false;
 let intervalId; // оголошуємо змінну для зберігання ID інтервалу
 
-document.querySelector(".avto-corection").addEventListener("click", function () {
-  if (trigger) {
-    clearInterval(intervalId); // якщо trigger === true, зупиняємо інтервал
-    trigger = false;
-  } else {
-    intervalId = setInterval(() => {
-      handleFormSubmission();
-    }, 500);
-    trigger = true;
-  }
-});
+document
+  .querySelector(".avto-corection")
+  .addEventListener("click", function () {
+    if (trigger) {
+      clearInterval(intervalId); // якщо trigger === true, зупиняємо інтервал
+      trigger = false;
+    } else {
+      intervalId = setInterval(() => {
+        let mass = parseFloat(document.getElementById("mass").value);
+        let initialVelocity = parseFloat(
+          document.getElementById("initialVelocity").value
+        );
+        let dragCoefficient = parseFloat(
+          document.getElementById("dragCoefficient").value
+        );
+        let angle = parseFloat(document.getElementById("angle").value);
+        let azimuth = parseFloat(document.getElementById("azimuth").value);
+        let initialZ = parseFloat(document.getElementById("initialZ").value);
+        let gravity = parseFloat(document.getElementById("gravity").value);
+        let airDensity = parseFloat(
+          document.getElementById("airDensity").value
+        );
+        let projectileArea = parseFloat(
+          document.getElementById("projectileArea").value
+        );
 
-document.querySelector(".corection").addEventListener("click", function (event) {
-  event.preventDefault(); // Prevent form submission
-  handleFormSubmission();
-});
+        // Отримання координат і конвертація в десятковий формат
+        let latitude = convertToDecimal(
+          parseFloat(document.getElementById("latitudeDegrees").value),
+          parseFloat(document.getElementById("latitudeMinutes").value),
+          parseFloat(document.getElementById("latitudeSeconds").value),
+          document.getElementById("latitudeDirection").value
+        );
+        let longitude = convertToDecimal(
+          parseFloat(document.getElementById("longitudeDegrees").value),
+          parseFloat(document.getElementById("longitudeMinutes").value),
+          parseFloat(document.getElementById("longitudeSeconds").value),
+          document.getElementById("longitudeDirection").value
+        );
+
+        // Виклик функції для розрахунку траєкторії
+        calculateTrajectory(
+          mass,
+          initialVelocity,
+          dragCoefficient,
+          angle,
+          azimuth,
+          initialZ,
+          latitude,
+          longitude,
+          gravity,
+          airDensity,
+          projectileArea
+        );
+      }, 500);
+      trigger = true;
+    }
+  });
+
+document
+  .querySelector(".corection")
+  .addEventListener("click", function (event) {
+    event.preventDefault(); // Prevent form submission
+    // Отримання значень параметрів
+    let mass = parseFloat(document.getElementById("mass").value);
+    let initialVelocity = parseFloat(
+      document.getElementById("initialVelocity").value
+    );
+    let dragCoefficient = parseFloat(
+      document.getElementById("dragCoefficient").value
+    );
+    let angle = parseFloat(document.getElementById("angle").value);
+    let azimuth = parseFloat(document.getElementById("azimuth").value);
+    let initialZ = parseFloat(document.getElementById("initialZ").value);
+    let gravity = parseFloat(document.getElementById("gravity").value);
+    let airDensity = parseFloat(document.getElementById("airDensity").value);
+    let projectileArea = parseFloat(
+      document.getElementById("projectileArea").value
+    );
+
+    // Отримання координат і конвертація в десятковий формат
+    let latitude = convertToDecimal(
+      parseFloat(document.getElementById("latitudeDegrees").value),
+      parseFloat(document.getElementById("latitudeMinutes").value),
+      parseFloat(document.getElementById("latitudeSeconds").value),
+      document.getElementById("latitudeDirection").value
+    );
+    let longitude = convertToDecimal(
+      parseFloat(document.getElementById("longitudeDegrees").value),
+      parseFloat(document.getElementById("longitudeMinutes").value),
+      parseFloat(document.getElementById("longitudeSeconds").value),
+      document.getElementById("longitudeDirection").value
+    );
+
+    // Виклик функції для розрахунку траєкторії
+    calculateTrajectory(
+      mass,
+      initialVelocity,
+      dragCoefficient,
+      angle,
+      azimuth,
+      initialZ,
+      latitude,
+      longitude,
+      gravity,
+      airDensity,
+      projectileArea
+    );
+  });
